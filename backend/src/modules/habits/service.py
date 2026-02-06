@@ -257,14 +257,15 @@ class HabitService:
         return len(deleted) > 0
 
     async def _get_completion_dates(self, habit_id: UUID) -> list[date]:
+        day_col = func.date_trunc("day", HabitCompletion.completed_at).label("day")
         result = await self.db.execute(
-            select(func.date_trunc("day", HabitCompletion.completed_at))
+            select(day_col)
             .where(
                 HabitCompletion.habit_id == habit_id,
                 HabitCompletion.completed == True,  # noqa: E712
             )
             .distinct()
-            .order_by(func.date_trunc("day", HabitCompletion.completed_at))
+            .order_by(day_col)
         )
         return [row[0].date() if hasattr(row[0], "date") else row[0] for row in result.all()]
 
