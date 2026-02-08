@@ -63,6 +63,8 @@ export interface WorkoutSession {
 	status: string;
 	template_name: string | null;
 	exercise_groups: ExerciseSetsGroup[];
+	rating_energy: number | null;
+	rating_mood: number | null;
 }
 
 export interface WorkoutSessionSummary {
@@ -75,6 +77,8 @@ export interface WorkoutSessionSummary {
 	exercise_count: number;
 	total_sets: number;
 	total_volume: number;
+	rating_energy: number | null;
+	rating_mood: number | null;
 }
 
 export interface ExerciseProgressionPoint {
@@ -84,6 +88,7 @@ export interface ExerciseProgressionPoint {
 	best_set_reps: number;
 	volume: number;
 	sets_count: number;
+	estimated_1rm: number;
 }
 
 export interface ExerciseStats {
@@ -263,7 +268,11 @@ export function addExerciseToSession(token: string, sessionId: string, exerciseI
 	});
 }
 
-export function completeSession(token: string, sessionId: string, data?: { notes?: string }) {
+export function completeSession(
+	token: string,
+	sessionId: string,
+	data?: { notes?: string; rating_energy?: number; rating_mood?: number }
+) {
 	return apiFetch<WorkoutSession>(`/api/fitness/sessions/${sessionId}/complete`, {
 		method: 'POST',
 		token,

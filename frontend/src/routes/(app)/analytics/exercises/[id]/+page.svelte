@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Trophy from '@lucide/svelte/icons/trophy';
+	import Target from '@lucide/svelte/icons/target';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import type { ExerciseProgressionPoint } from '$lib/api/fitness';
@@ -36,12 +37,14 @@
 		const totalSessions = prog.length;
 		const prWeight = prog.length > 0 ? Math.max(...prog.map((p) => p.max_weight)) : 0;
 		const totalVolume = prog.reduce((sum, p) => sum + p.volume, 0);
-		return { totalSessions, prWeight, totalVolume };
+		const maxEstimated1rm = prog.length > 0 ? Math.max(...prog.map((p) => p.estimated_1rm)) : 0;
+		return { totalSessions, prWeight, totalVolume, maxEstimated1rm };
 	});
 
 	const dates = $derived(filtered.map((p) => p.date));
 	const maxWeights = $derived(filtered.map((p) => p.max_weight));
 	const volumes = $derived(filtered.map((p) => Math.round(p.volume)));
+	const estimated1RMs = $derived(filtered.map((p) => Math.round(p.estimated_1rm)));
 
 	// Compute deltas for recent sessions list (reversed = newest first)
 	const sessionsWithDeltas = $derived.by(() => {
@@ -94,7 +97,7 @@
 	</div>
 
 	<!-- Stats cards -->
-	<div class="grid grid-cols-3 gap-3">
+	<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
 		<div class="rounded-lg border border-border bg-card p-3 text-center">
 			<div class="text-2xl font-bold tabular-nums">{stats.totalSessions}</div>
 			<div class="text-xs text-muted-foreground">Sessions</div>
@@ -110,6 +113,13 @@
 			<div class="text-2xl font-bold tabular-nums">{Math.round(stats.totalVolume)}</div>
 			<div class="text-xs text-muted-foreground">Total Vol (kg)</div>
 		</div>
+		<div class="rounded-lg border border-border bg-card p-3 text-center">
+			<div class="flex items-center justify-center gap-1">
+				<Target class="h-4 w-4 text-amber-500" />
+				<span class="text-2xl font-bold tabular-nums">{Math.round(stats.maxEstimated1rm)}</span>
+			</div>
+			<div class="text-xs text-muted-foreground">Est. 1RM (kg)</div>
+		</div>
 	</div>
 
 	{#if filtered.length >= 2}
@@ -123,6 +133,12 @@
 		<div class="rounded-lg border border-border bg-card p-4">
 			<h2 class="mb-3 text-sm font-medium text-muted-foreground">Volume Per Session</h2>
 			<ProgressionChart {dates} values={volumes} label="Volume (kg)" color="#10B981" />
+		</div>
+
+		<!-- Estimated 1RM Chart -->
+		<div class="rounded-lg border border-border bg-card p-4">
+			<h2 class="mb-3 text-sm font-medium text-muted-foreground">Estimated 1RM</h2>
+			<ProgressionChart {dates} values={estimated1RMs} label="Est. 1RM (kg)" color="#F59E0B" />
 		</div>
 	{:else if filtered.length === 1}
 		<div

@@ -2,6 +2,10 @@
 	import { Button } from '$lib/components/ui/button';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Clock from '@lucide/svelte/icons/clock';
+	import TrendingUp from '@lucide/svelte/icons/trending-up';
+	import Zap from '@lucide/svelte/icons/zap';
+	import Smile from '@lucide/svelte/icons/smile';
+	import type { ExerciseSetsGroup } from '$lib/api/fitness';
 
 	let { data } = $props();
 
@@ -30,6 +34,29 @@
 			0
 		)
 	);
+
+	function getProgressionSuggestion(group: ExerciseSetsGroup): string | null {
+		const workingSets = group.sets.filter((s) => s.completed && s.set_type === 'working');
+		if (workingSets.length < 2) return null;
+
+		const weights = workingSets.map((s) => s.weight_kg);
+		const allSameWeight = weights.every((w) => w === weights[0]);
+		if (!allSameWeight) return null;
+
+		const weight = weights[0];
+
+		if (weight === 0) {
+			return 'All sets completed at bodyweight — try +1 rep per set next session';
+		}
+
+		const increment = weight >= 25 ? 2.5 : 1.0;
+		const nextWeight = weight + increment;
+		return `All sets completed at ${weight}kg — try ${nextWeight}kg next session`;
+	}
+
+	function renderRating(value: number, max: number = 5): { filled: number; empty: number } {
+		return { filled: value, empty: max - value };
+	}
 </script>
 
 <div class="space-y-6">
@@ -76,8 +103,50 @@
 		</div>
 	</div>
 
+	<!-- Session Rating -->
+	{#if session.rating_energy || session.rating_mood}
+		<div class="rounded-lg border border-border bg-card p-4 space-y-2">
+			<h3 class="text-sm font-medium text-muted-foreground">Session Rating</h3>
+			<div class="flex flex-col gap-2">
+				{#if session.rating_energy}
+					{@const rating = renderRating(session.rating_energy)}
+					<div class="flex items-center gap-2">
+						<Zap class="h-4 w-4 text-amber-500" />
+						<span class="text-sm w-14">Energy</span>
+						<div class="flex gap-0.5">
+							{#each Array(rating.filled) as _}
+								<span class="h-3 w-3 rounded-full bg-amber-500"></span>
+							{/each}
+							{#each Array(rating.empty) as _}
+								<span class="h-3 w-3 rounded-full bg-muted"></span>
+							{/each}
+						</div>
+						<span class="text-xs text-muted-foreground">{session.rating_energy}/5</span>
+					</div>
+				{/if}
+				{#if session.rating_mood}
+					{@const rating = renderRating(session.rating_mood)}
+					<div class="flex items-center gap-2">
+						<Smile class="h-4 w-4 text-blue-500" />
+						<span class="text-sm w-14">Mood</span>
+						<div class="flex gap-0.5">
+							{#each Array(rating.filled) as _}
+								<span class="h-3 w-3 rounded-full bg-blue-500"></span>
+							{/each}
+							{#each Array(rating.empty) as _}
+								<span class="h-3 w-3 rounded-full bg-muted"></span>
+							{/each}
+						</div>
+						<span class="text-xs text-muted-foreground">{session.rating_mood}/5</span>
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/if}
+
 	<!-- Exercise details -->
 	{#each session.exercise_groups as group}
+		{@const suggestion = getProgressionSuggestion(group)}
 		<div class="rounded-lg border border-border bg-card p-4">
 			<div class="mb-3 flex items-center justify-between">
 				<div>
@@ -113,6 +182,13 @@
 					</div>
 				{/each}
 			</div>
+
+			{#if suggestion}
+				<div class="mt-3 flex items-center gap-2 rounded-lg bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-400">
+					<TrendingUp class="h-4 w-4 shrink-0" />
+					<span>{suggestion}</span>
+				</div>
+			{/if}
 		</div>
 	{/each}
 

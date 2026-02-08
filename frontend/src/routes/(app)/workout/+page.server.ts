@@ -108,9 +108,17 @@ export const actions = {
 		const data = await request.formData();
 		const sessionId = data.get('sessionId') as string;
 		const notes = (data.get('notes') as string) || undefined;
+		const ratingEnergyRaw = parseInt(data.get('ratingEnergy') as string);
+		const ratingMoodRaw = parseInt(data.get('ratingMood') as string);
+		const rating_energy = ratingEnergyRaw >= 1 && ratingEnergyRaw <= 5 ? ratingEnergyRaw : undefined;
+		const rating_mood = ratingMoodRaw >= 1 && ratingMoodRaw <= 5 ? ratingMoodRaw : undefined;
 
 		try {
-			await completeSession(locals.token, sessionId, notes ? { notes } : undefined);
+			await completeSession(locals.token, sessionId, {
+				...(notes && { notes }),
+				...(rating_energy && { rating_energy }),
+				...(rating_mood && { rating_mood })
+			});
 		} catch {
 			return fail(500, { error: 'Failed to complete workout' });
 		}

@@ -108,6 +108,12 @@ class WorkoutSession(Base, UUIDMixin):
         CheckConstraint("status IN ('in_progress', 'completed')"),
         server_default="'in_progress'",
     )
+    rating_energy: Mapped[int | None] = mapped_column(
+        SmallInteger, CheckConstraint("rating_energy BETWEEN 1 AND 5")
+    )
+    rating_mood: Mapped[int | None] = mapped_column(
+        SmallInteger, CheckConstraint("rating_mood BETWEEN 1 AND 5")
+    )
 
     template: Mapped[WorkoutTemplate | None] = relationship()
     sets: Mapped[list["WorkoutSet"]] = relationship(

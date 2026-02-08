@@ -231,7 +231,8 @@ class FitnessService:
         return len(result.all()) > 0
 
     async def complete_session(
-        self, user_id: UUID, session_id: UUID, notes: str | None = None
+        self, user_id: UUID, session_id: UUID, notes: str | None = None,
+        rating_energy: int | None = None, rating_mood: int | None = None,
     ) -> WorkoutSession | None:
         session = await self.get_session(user_id, session_id)
         if not session:
@@ -243,6 +244,10 @@ class FitnessService:
         session.completed_at = datetime.now(timezone.utc)
         if notes:
             session.notes = notes
+        if rating_energy is not None:
+            session.rating_energy = rating_energy
+        if rating_mood is not None:
+            session.rating_mood = rating_mood
         await self.db.flush()
         return await self.get_session(user_id, session_id)
 
@@ -339,6 +344,8 @@ class FitnessService:
             max_weight = max(s.weight_kg for s in session_sets)
             best_set = max(session_sets, key=lambda s: s.weight_kg)
             volume = sum(s.weight_kg * s.reps for s in session_sets)
+            # Epley formula: e1rm = weight * (1 + reps / 30)
+            e1rm = best_set.weight_kg * (1 + best_set.reps / 30) if best_set.weight_kg > 0 else 0
             progression.append({
                 "date": started_at,
                 "max_weight": max_weight,
@@ -346,6 +353,7 @@ class FitnessService:
                 "best_set_reps": best_set.reps,
                 "volume": volume,
                 "sets_count": len(session_sets),
+                "estimated_1rm": round(e1rm, 1),
             })
 
         return progression
