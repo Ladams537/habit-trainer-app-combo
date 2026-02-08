@@ -12,6 +12,8 @@
 	import Flag from '@lucide/svelte/icons/flag';
 	import Timer from '@lucide/svelte/icons/timer';
 	import MessageSquare from '@lucide/svelte/icons/message-square';
+	import Zap from '@lucide/svelte/icons/zap';
+	import Smile from '@lucide/svelte/icons/smile';
 
 	let { data } = $props();
 
@@ -85,6 +87,8 @@
 	let showExercisePicker = $state(false);
 	let showFinishPanel = $state(false);
 	let workoutNotes = $state('');
+	let ratingEnergy = $state(0);
+	let ratingMood = $state(0);
 
 	const currentExercise = $derived(workoutExercises[currentIndex]);
 	const totalExercises = $derived(workoutExercises.length);
@@ -168,7 +172,7 @@
 		</Button>
 	</div>
 
-	<!-- Finish panel with notes -->
+	<!-- Finish panel with notes and ratings -->
 	{#if showFinishPanel}
 		<div class="rounded-xl border border-border bg-card p-4 space-y-3">
 			<div class="flex items-center gap-2 text-sm font-medium">
@@ -181,10 +185,55 @@
 				rows={3}
 				class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
 			></textarea>
+
+			<!-- Rating selectors -->
+			<div class="space-y-3">
+				<div class="flex items-center gap-3">
+					<div class="flex items-center gap-1.5 text-sm text-muted-foreground w-20">
+						<Zap class="h-4 w-4" />
+						Energy
+					</div>
+					<div class="flex gap-1.5">
+						{#each [1, 2, 3, 4, 5] as val}
+							<button
+								type="button"
+								class="h-8 w-8 rounded-full border-2 transition-all {ratingEnergy >= val
+									? 'border-amber-500 bg-amber-500 text-white'
+									: 'border-border bg-background text-muted-foreground hover:border-amber-300'}"
+								onclick={() => (ratingEnergy = ratingEnergy === val ? 0 : val)}
+							>
+								<span class="text-xs font-medium">{val}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+				<div class="flex items-center gap-3">
+					<div class="flex items-center gap-1.5 text-sm text-muted-foreground w-20">
+						<Smile class="h-4 w-4" />
+						Mood
+					</div>
+					<div class="flex gap-1.5">
+						{#each [1, 2, 3, 4, 5] as val}
+							<button
+								type="button"
+								class="h-8 w-8 rounded-full border-2 transition-all {ratingMood >= val
+									? 'border-blue-500 bg-blue-500 text-white'
+									: 'border-border bg-background text-muted-foreground hover:border-blue-300'}"
+								onclick={() => (ratingMood = ratingMood === val ? 0 : val)}
+							>
+								<span class="text-xs font-medium">{val}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+			</div>
+
 			<div class="flex gap-2">
 				<form method="POST" action="?/completeWorkout" use:enhance class="flex-1">
 					<input type="hidden" name="sessionId" value={data.session.id} />
 					<input type="hidden" name="notes" value={workoutNotes} />
+					<input type="hidden" name="ratingEnergy" value={ratingEnergy} />
+					<input type="hidden" name="ratingMood" value={ratingMood} />
 					<Button type="submit" class="w-full">
 						Finish Workout
 					</Button>

@@ -88,6 +88,8 @@ class AddExerciseRequest(BaseModel):
 
 class CompleteSessionRequest(BaseModel):
     notes: str | None = None
+    rating_energy: int | None = Field(None, ge=1, le=5)
+    rating_mood: int | None = Field(None, ge=1, le=5)
 
 
 class WorkoutSetCreate(BaseModel):
@@ -130,6 +132,8 @@ class WorkoutSessionResponse(BaseModel):
     status: str
     template_name: str | None = None
     exercise_groups: list[ExerciseSetsGroup] = []
+    rating_energy: int | None = None
+    rating_mood: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -144,6 +148,8 @@ class WorkoutSessionSummary(BaseModel):
     exercise_count: int = 0
     total_sets: int = 0
     total_volume: float = 0
+    rating_energy: int | None = None
+    rating_mood: int | None = None
 
 
 # --- Stats schemas ---
@@ -155,6 +161,7 @@ class ExerciseProgressionPoint(BaseModel):
     best_set_reps: int
     volume: float
     sets_count: int
+    estimated_1rm: float
 
 
 class ExerciseStatsResponse(BaseModel):

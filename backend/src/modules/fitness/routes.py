@@ -49,6 +49,8 @@ def _session_to_response(session) -> WorkoutSessionResponse:
         status=session.status,
         template_name=session.template.name if session.template else None,
         exercise_groups=list(groups.values()),
+        rating_energy=session.rating_energy,
+        rating_mood=session.rating_mood,
     )
 
 
@@ -73,6 +75,8 @@ def _session_to_summary(session) -> WorkoutSessionSummary:
         exercise_count=len(exercise_ids),
         total_sets=total_sets,
         total_volume=total_volume,
+        rating_energy=session.rating_energy,
+        rating_mood=session.rating_mood,
     )
 
 
@@ -208,7 +212,12 @@ async def complete_session(
 ):
     service = FitnessService(db)
     notes = data.notes if data else None
-    session = await service.complete_session(user.id, session_id, notes=notes)
+    rating_energy = data.rating_energy if data else None
+    rating_mood = data.rating_mood if data else None
+    session = await service.complete_session(
+        user.id, session_id, notes=notes,
+        rating_energy=rating_energy, rating_mood=rating_mood,
+    )
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     return _session_to_response(session)
