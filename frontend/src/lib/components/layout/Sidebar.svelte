@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import Brain from '@lucide/svelte/icons/brain';
 	import CalendarDays from '@lucide/svelte/icons/calendar-days';
 	import ChartLine from '@lucide/svelte/icons/chart-line';
 	import Dumbbell from '@lucide/svelte/icons/dumbbell';
@@ -9,6 +10,7 @@
 	const navItems = [
 		{ href: '/today', label: 'Today', icon: ListChecks },
 		{ href: '/plan', label: 'Plan', icon: CalendarDays },
+		{ href: '/skills', label: 'Skills', icon: Brain },
 		{ href: '/analytics', label: 'Analytics', icon: ChartLine }
 	];
 

@@ -13,6 +13,7 @@ from src.shared.base_models import Base
 from src.modules.auth.models import User  # noqa: F401
 from src.modules.fitness.models import Exercise, TemplateExercise, WorkoutSession, WorkoutSet, WorkoutTemplate  # noqa: F401
 from src.modules.habits.models import ActivityLog, HabitCompletion, HabitDefinition  # noqa: F401
+from src.modules.skills.models import CompetencyLevel, PracticeSession, SkillDefinition  # noqa: F401
 
 config = context.config
 
