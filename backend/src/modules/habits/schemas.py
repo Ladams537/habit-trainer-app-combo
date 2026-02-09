@@ -12,6 +12,7 @@ class HabitCreate(BaseModel):
     target_value: float = 1.0
     unit: str | None = None
     color: str = "#4CAF50"
+    partial_completion_counts: bool = True
 
 
 class HabitUpdate(BaseModel):
@@ -22,6 +23,7 @@ class HabitUpdate(BaseModel):
     unit: str | None = None
     color: str | None = None
     is_active: bool | None = None
+    partial_completion_counts: bool | None = None
 
 
 class HabitResponse(BaseModel):
@@ -35,6 +37,7 @@ class HabitResponse(BaseModel):
     color: str
     sort_order: int
     is_active: bool
+    partial_completion_counts: bool
     created_at: datetime
     current_streak: int = 0
     strength: float = 0.0
@@ -50,6 +53,7 @@ class HabitTodayResponse(BaseModel):
     unit: str | None
     color: str
     sort_order: int
+    partial_completion_counts: bool
     completed_today: bool = False
     today_value: float = 0.0
     current_streak: int = 0

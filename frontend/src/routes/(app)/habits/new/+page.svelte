@@ -10,6 +10,7 @@
 	const colors = ['#22c55e', '#3b82f6', '#f97316', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 	let selectedColor = $state('#22c55e');
 	let habitType = $state('boolean');
+	let partialCompletionCounts = $state(true);
 </script>
 
 <div class="space-y-6">
@@ -57,6 +58,25 @@
 								placeholder={habitType === 'duration' ? 'minutes' : 'glasses'}
 							/>
 						</div>
+					</div>
+
+					<div class="flex items-center justify-between rounded-md border border-input px-3 py-3">
+						<div class="space-y-0.5">
+							<Label for="partial_completion_counts">Partial progress counts toward streak</Label>
+							<p class="text-xs text-muted-foreground">When off, you must reach your target to count the day</p>
+						</div>
+						<input type="hidden" name="partial_completion_counts" value={partialCompletionCounts ? 'true' : 'false'} />
+						<button
+							type="button"
+							role="switch"
+							aria-checked={partialCompletionCounts}
+							onclick={() => (partialCompletionCounts = !partialCompletionCounts)}
+							class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 {partialCompletionCounts ? 'bg-primary' : 'bg-muted'}"
+						>
+							<span
+								class="pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform {partialCompletionCounts ? 'translate-x-4' : 'translate-x-0'}"
+							></span>
+						</button>
 					</div>
 				{/if}
 

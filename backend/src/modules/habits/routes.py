@@ -14,14 +14,20 @@ from src.modules.habits.schemas import (
     HabitUpdate,
     ReorderRequest,
 )
-from src.modules.habits.service import HabitService, compute_habit_strength, compute_streaks
+from src.modules.habits.service import (
+    HabitService,
+    compute_habit_strength,
+    compute_streaks,
+)
 
 router = APIRouter(prefix="/api/habits", tags=["habits"])
 
 
 async def _enrich_habit(service: HabitService, habit) -> dict:
     """Add streak and strength to a habit for response."""
-    completion_dates = await service._get_completion_dates(habit.id)
+    completion_dates = await service._get_effective_completion_dates(
+        habit.id, float(habit.target_value), habit.partial_completion_counts
+    )
     current_streak, _ = compute_streaks(completion_dates)
     strength = compute_habit_strength(completion_dates)
     return {
@@ -76,8 +82,14 @@ async def delete_habit(habit_id: UUID, user: CurrentUser, db: DB):
         raise HTTPException(status_code=404, detail="Habit not found")
 
 
-@router.post("/{habit_id}/log", response_model=HabitCompletionResponse, status_code=status.HTTP_201_CREATED)
-async def log_completion(habit_id: UUID, data: HabitLogCreate, user: CurrentUser, db: DB):
+@router.post(
+    "/{habit_id}/log",
+    response_model=HabitCompletionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def log_completion(
+    habit_id: UUID, data: HabitLogCreate, user: CurrentUser, db: DB
+):
     service = HabitService(db)
     try:
         return await service.log_completion(user.id, habit_id, data)
@@ -86,7 +98,9 @@ async def log_completion(habit_id: UUID, data: HabitLogCreate, user: CurrentUser
 
 
 @router.delete("/{habit_id}/log/{target_date}", status_code=status.HTTP_204_NO_CONTENT)
-async def remove_completion(habit_id: UUID, target_date: date, user: CurrentUser, db: DB):
+async def remove_completion(
+    habit_id: UUID, target_date: date, user: CurrentUser, db: DB
+):
     service = HabitService(db)
     if not await service.remove_completion(user.id, habit_id, target_date):
         raise HTTPException(status_code=404, detail="Completion not found")

@@ -71,8 +71,9 @@ class HabitService:
     async def create_habit(self, user_id: UUID, data: HabitCreate) -> HabitDefinition:
         # Get max sort_order
         result = await self.db.execute(
-            select(func.coalesce(func.max(HabitDefinition.sort_order), -1))
-            .where(HabitDefinition.user_id == user_id)
+            select(func.coalesce(func.max(HabitDefinition.sort_order), -1)).where(
+                HabitDefinition.user_id == user_id
+            )
         )
         max_order = result.scalar()
 
@@ -85,6 +86,7 @@ class HabitService:
             target_value=data.target_value,
             unit=data.unit,
             color=data.color,
+            partial_completion_counts=data.partial_completion_counts,
             sort_order=max_order + 1,
         )
         self.db.add(habit)
@@ -92,7 +94,9 @@ class HabitService:
         await self.db.refresh(habit)
         return habit
 
-    async def get_habits(self, user_id: UUID, active_only: bool = True) -> list[HabitDefinition]:
+    async def get_habits(
+        self, user_id: UUID, active_only: bool = True
+    ) -> list[HabitDefinition]:
         query = select(HabitDefinition).where(HabitDefinition.user_id == user_id)
         if active_only:
             query = query.where(HabitDefinition.is_active == True)  # noqa: E712
@@ -102,12 +106,15 @@ class HabitService:
 
     async def get_habit(self, user_id: UUID, habit_id: UUID) -> HabitDefinition | None:
         result = await self.db.execute(
-            select(HabitDefinition)
-            .where(HabitDefinition.id == habit_id, HabitDefinition.user_id == user_id)
+            select(HabitDefinition).where(
+                HabitDefinition.id == habit_id, HabitDefinition.user_id == user_id
+            )
         )
         return result.scalar_one_or_none()
 
-    async def update_habit(self, user_id: UUID, habit_id: UUID, data: HabitUpdate) -> HabitDefinition | None:
+    async def update_habit(
+        self, user_id: UUID, habit_id: UUID, data: HabitUpdate
+    ) -> HabitDefinition | None:
         habit = await self.get_habit(user_id, habit_id)
         if not habit:
             return None
@@ -144,7 +151,9 @@ class HabitService:
 
     async def get_today_habits(self, user_id: UUID) -> list[dict]:
         habits = await self.get_habits(user_id, active_only=True)
-        today_start = datetime.combine(date.today(), datetime.min.time(), tzinfo=timezone.utc)
+        today_start = datetime.combine(
+            date.today(), datetime.min.time(), tzinfo=timezone.utc
+        )
         today_end = today_start + timedelta(days=1)
 
         result = []
@@ -154,8 +163,7 @@ class HabitService:
 
             # Check today's completion
             comp_result = await self.db.execute(
-                select(HabitCompletion)
-                .where(
+                select(HabitCompletion).where(
                     HabitCompletion.habit_id == habit.id,
                     HabitCompletion.completed_at >= today_start,
                     HabitCompletion.completed_at < today_end,
@@ -163,27 +171,37 @@ class HabitService:
                 )
             )
             today_completions = list(comp_result.scalars().all())
-            completed_today = len(today_completions) > 0
             today_value = sum(float(c.value) for c in today_completions)
 
-            # Get streak info
-            completion_dates = await self._get_completion_dates(habit.id)
+            # completed_today depends on partial_completion_counts setting
+            if habit.partial_completion_counts:
+                completed_today = len(today_completions) > 0
+            else:
+                completed_today = today_value >= float(habit.target_value)
+
+            # Get streak info using effective completion dates
+            completion_dates = await self._get_effective_completion_dates(
+                habit.id, float(habit.target_value), habit.partial_completion_counts
+            )
             current_streak, _ = compute_streaks(completion_dates)
             strength = compute_habit_strength(completion_dates)
 
-            result.append({
-                "id": habit.id,
-                "name": habit.name,
-                "habit_type": habit.habit_type,
-                "target_value": float(habit.target_value),
-                "unit": habit.unit,
-                "color": habit.color,
-                "sort_order": habit.sort_order,
-                "completed_today": completed_today,
-                "today_value": today_value,
-                "current_streak": current_streak,
-                "strength": strength,
-            })
+            result.append(
+                {
+                    "id": habit.id,
+                    "name": habit.name,
+                    "habit_type": habit.habit_type,
+                    "target_value": float(habit.target_value),
+                    "unit": habit.unit,
+                    "color": habit.color,
+                    "sort_order": habit.sort_order,
+                    "partial_completion_counts": habit.partial_completion_counts,
+                    "completed_today": completed_today,
+                    "today_value": today_value,
+                    "current_streak": current_streak,
+                    "strength": strength,
+                }
+            )
 
         return result
 
@@ -201,7 +219,9 @@ class HabitService:
 
         # For boolean habits, replace existing completion for this day
         if habit.habit_type == "boolean":
-            day_start = datetime.combine(completed_date, datetime.min.time(), tzinfo=timezone.utc)
+            day_start = datetime.combine(
+                completed_date, datetime.min.time(), tzinfo=timezone.utc
+            )
             day_end = day_start + timedelta(days=1)
             await self.db.execute(
                 delete(HabitCompletion).where(
@@ -236,12 +256,16 @@ class HabitService:
         await self.db.refresh(completion)
         return completion
 
-    async def remove_completion(self, user_id: UUID, habit_id: UUID, target_date: date) -> bool:
+    async def remove_completion(
+        self, user_id: UUID, habit_id: UUID, target_date: date
+    ) -> bool:
         habit = await self.get_habit(user_id, habit_id)
         if not habit:
             return False
 
-        day_start = datetime.combine(target_date, datetime.min.time(), tzinfo=timezone.utc)
+        day_start = datetime.combine(
+            target_date, datetime.min.time(), tzinfo=timezone.utc
+        )
         day_end = day_start + timedelta(days=1)
 
         result = await self.db.execute(
@@ -267,14 +291,44 @@ class HabitService:
             .distinct()
             .order_by(day_col)
         )
-        return [row[0].date() if hasattr(row[0], "date") else row[0] for row in result.all()]
+        return [
+            row[0].date() if hasattr(row[0], "date") else row[0] for row in result.all()
+        ]
+
+    async def _get_effective_completion_dates(
+        self,
+        habit_id: UUID,
+        target_value: float,
+        partial_completion_counts: bool,
+    ) -> list[date]:
+        """Get completion dates, respecting partial_completion_counts setting."""
+        if partial_completion_counts:
+            return await self._get_completion_dates(habit_id)
+
+        # Only dates where total value >= target count as completed
+        day_col = func.date_trunc("day", HabitCompletion.completed_at).label("day")
+        result = await self.db.execute(
+            select(day_col)
+            .where(
+                HabitCompletion.habit_id == habit_id,
+                HabitCompletion.completed == True,  # noqa: E712
+            )
+            .group_by(day_col)
+            .having(func.sum(HabitCompletion.value) >= target_value)
+            .order_by(day_col)
+        )
+        return [
+            row[0].date() if hasattr(row[0], "date") else row[0] for row in result.all()
+        ]
 
     async def get_streak(self, user_id: UUID, habit_id: UUID) -> dict | None:
         habit = await self.get_habit(user_id, habit_id)
         if not habit:
             return None
 
-        completion_dates = await self._get_completion_dates(habit_id)
+        completion_dates = await self._get_effective_completion_dates(
+            habit_id, float(habit.target_value), habit.partial_completion_counts
+        )
         current, longest = compute_streaks(completion_dates)
         strength = compute_habit_strength(completion_dates)
 

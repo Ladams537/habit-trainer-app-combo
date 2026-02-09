@@ -8,6 +8,11 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
     environment: str = "development"
     allowed_origins: str = "http://localhost:5173"
+    strava_client_id: str = ""
+    strava_client_secret: str = ""
+    strava_redirect_uri: str = (
+        "http://localhost:5173/settings/integrations/strava/callback"
+    )
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

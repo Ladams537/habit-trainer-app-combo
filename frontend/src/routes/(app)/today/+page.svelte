@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import HabitChecklist from '$lib/components/habits/HabitChecklist.svelte';
+	import SkillCard from '$lib/components/skills/SkillCard.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Dumbbell from '@lucide/svelte/icons/dumbbell';
 	import Play from '@lucide/svelte/icons/play';
+	import Brain from '@lucide/svelte/icons/brain';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
 	let { data } = $props();
 
@@ -63,28 +66,58 @@
 				</Button>
 			</div>
 		{:else}
-			<form method="POST" action="?/startWorkout" use:enhance class="space-y-3">
-				{#if data.templates.length > 0}
-					<select
-						name="templateId"
-						bind:value={selectedTemplateId}
-						class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-					>
-						<option value="">Free-form (no template)</option>
-						{#each data.templates as template}
-							<option value={template.id}>
-								{template.name} ({template.exercises.length} exercises)
-							</option>
-						{/each}
-					</select>
+			<div class="space-y-3">
+				{#if data.activeProgram}
+					<Button href="/programs/{data.activeProgram.id}" class="w-full" variant="default">
+						<Dumbbell class="mr-1 h-4 w-4" />
+						Continue Program: {data.activeProgram.name}
+						{#if data.activeProgram.current_week}
+							— Week {data.activeProgram.current_week}
+						{/if}
+						<ChevronRight class="ml-auto h-4 w-4" />
+					</Button>
 				{/if}
-				<Button type="submit" class="w-full">
-					<Play class="mr-1 h-4 w-4" />
-					Start Workout
-				</Button>
-			</form>
+				<form method="POST" action="?/startWorkout" use:enhance class="space-y-3">
+					{#if data.templates.length > 0}
+						<select
+							name="templateId"
+							bind:value={selectedTemplateId}
+							class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+						>
+							<option value="">Free-form (no template)</option>
+							{#each data.templates as template}
+								<option value={template.id}>
+									{template.name} ({template.exercises.length} exercises)
+								</option>
+							{/each}
+						</select>
+					{/if}
+					<Button type="submit" class="w-full" variant={data.activeProgram ? 'outline' : 'default'}>
+						<Play class="mr-1 h-4 w-4" />
+						Start Workout
+					</Button>
+				</form>
+			</div>
 		{/if}
 	</div>
+
+	<!-- Skills Card -->
+	{#if data.skillsDue.length > 0}
+		<div class="rounded-lg border border-border bg-card p-4">
+			<div class="mb-3 flex items-center gap-2">
+				<span
+					class="inline-block h-3 w-3 rounded-full"
+					style="background-color: #8B5CF6"
+				></span>
+				<h2 class="text-lg font-semibold">Skills to Practice</h2>
+			</div>
+			<div class="space-y-2">
+				{#each data.skillsDue as skill (skill.id)}
+					<SkillCard {skill} />
+				{/each}
+			</div>
+		</div>
+	{/if}
 
 	<HabitChecklist habits={data.habits} />
 </div>

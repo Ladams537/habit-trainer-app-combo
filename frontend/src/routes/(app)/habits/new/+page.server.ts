@@ -14,6 +14,7 @@ export const actions = {
 		const targetValue = parseFloat((data.get('target_value') as string) || '1');
 		const unit = data.get('unit') as string;
 		const color = data.get('color') as string;
+		const partialCompletionCounts = (data.get('partial_completion_counts') as string) !== 'false';
 
 		if (!name) return fail(400, { error: 'Name is required' });
 
@@ -24,7 +25,8 @@ export const actions = {
 				frequency: frequency || 'daily',
 				target_value: targetValue,
 				unit: unit || undefined,
-				color: color || '#4CAF50'
+				color: color || '#4CAF50',
+				partial_completion_counts: partialCompletionCounts
 			});
 		} catch (e) {
 			if (e instanceof ApiError) {

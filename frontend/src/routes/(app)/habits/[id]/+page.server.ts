@@ -1,6 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { apiFetch, ApiError } from '$lib/api/client';
-import { getStreak, deleteHabit } from '$lib/api/habits';
+import { getStreak, deleteHabit, updateHabit } from '$lib/api/habits';
 import type { Habit, HabitStreak } from '$lib/api/habits';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -32,5 +32,19 @@ export const actions = {
 		}
 
 		redirect(303, '/habits');
+	},
+	updatePartial: async ({ params, locals, request }) => {
+		if (!locals.token) return fail(401);
+
+		const data = await request.formData();
+		const partialCompletionCounts = (data.get('partial_completion_counts') as string) === 'true';
+
+		try {
+			await updateHabit(locals.token, params.id, {
+				partial_completion_counts: partialCompletionCounts
+			});
+		} catch {
+			return fail(500, { error: 'Failed to update habit' });
+		}
 	}
 } satisfies Actions;

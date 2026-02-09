@@ -11,8 +11,10 @@ from src.shared.base_models import Base
 
 # Import all models so they register with Base.metadata
 from src.modules.auth.models import User  # noqa: F401
-from src.modules.fitness.models import Exercise, TemplateExercise, WorkoutSession, WorkoutSet, WorkoutTemplate  # noqa: F401
+from src.modules.fitness.models import Exercise, ProgramWeek, TemplateExercise, WorkoutProgram, WorkoutSession, WorkoutSet, WorkoutTemplate  # noqa: F401
 from src.modules.habits.models import ActivityLog, HabitCompletion, HabitDefinition  # noqa: F401
+from src.modules.skills.models import CompetencyLevel, PracticeSession, SkillDefinition  # noqa: F401
+from src.modules.integrations.models import UserIntegration  # noqa: F401
 
 config = context.config
 
