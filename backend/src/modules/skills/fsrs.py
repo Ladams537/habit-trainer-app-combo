@@ -23,7 +23,7 @@ def compute_next_review_date(
     """
     if stability <= 0:
         return last_review + timedelta(days=1)
-    interval_days = 9 * stability * (threshold ** -1 - 1)
+    interval_days = 9 * stability * (threshold**-1 - 1)
     interval_days = max(interval_days, 0.5)  # minimum half-day
     return last_review + timedelta(days=interval_days)
 

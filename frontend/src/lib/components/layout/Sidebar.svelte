@@ -2,16 +2,16 @@
 	import { page } from '$app/state';
 	import Brain from '@lucide/svelte/icons/brain';
 	import CalendarDays from '@lucide/svelte/icons/calendar-days';
-	import ChartLine from '@lucide/svelte/icons/chart-line';
 	import Dumbbell from '@lucide/svelte/icons/dumbbell';
 	import ListChecks from '@lucide/svelte/icons/list-checks';
 	import LogOut from '@lucide/svelte/icons/log-out';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
 
 	const navItems = [
 		{ href: '/today', label: 'Today', icon: ListChecks },
-		{ href: '/plan', label: 'Plan', icon: CalendarDays },
+		{ href: '/programs', label: 'Programs', icon: Dumbbell },
 		{ href: '/skills', label: 'Skills', icon: Brain },
-		{ href: '/analytics', label: 'Analytics', icon: ChartLine }
+		{ href: '/calendar', label: 'Calendar', icon: CalendarDays }
 	];
 
 	function isActive(href: string): boolean {
@@ -39,7 +39,16 @@
 		{/each}
 	</nav>
 
-	<div class="border-t border-border p-3">
+	<div class="border-t border-border p-3 space-y-1">
+		<a
+			href="/settings"
+			class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {isActive('/settings')
+				? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+				: 'text-sidebar-foreground hover:bg-sidebar-accent/50'}"
+		>
+			<SettingsIcon class="h-4 w-4" />
+			<span>Settings</span>
+		</a>
 		<form method="POST" action="/logout">
 			<button
 				type="submit"

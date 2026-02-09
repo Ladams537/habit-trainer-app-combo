@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 # --- Exercise schemas ---
 
+
 class ExerciseCreate(BaseModel):
     name: str
     category: str = Field(pattern=r"^(compound|isolation|cardio)$")
@@ -27,6 +28,7 @@ class ExerciseResponse(BaseModel):
 
 
 # --- Template schemas ---
+
 
 class TemplateExerciseCreate(BaseModel):
     exercise_id: UUID
@@ -77,6 +79,7 @@ class WorkoutTemplateResponse(BaseModel):
 
 
 # --- Session schemas ---
+
 
 class StartSessionRequest(BaseModel):
     template_id: UUID | None = None
@@ -154,6 +157,7 @@ class WorkoutSessionSummary(BaseModel):
 
 # --- Stats schemas ---
 
+
 class ExerciseProgressionPoint(BaseModel):
     date: datetime
     max_weight: float
@@ -174,6 +178,7 @@ class ExerciseStatsResponse(BaseModel):
 
 # --- Overview stats schemas ---
 
+
 class WeeklyVolume(BaseModel):
     week_start: str
     total_volume: float
@@ -191,3 +196,103 @@ class OverviewStatsResponse(BaseModel):
     total_workouts: int
     total_volume: float
     current_streak: int
+
+
+# --- Program schemas ---
+
+
+class ProgramExercisePrescription(BaseModel):
+    exercise_id: UUID
+    exercise_name: str
+    sets: int = 3
+    reps: int = 10
+    weight_kg: float = 0
+    rest_seconds: int = 120
+    set_type: str = "working"
+
+
+class ProgramDayPrescription(BaseModel):
+    day_label: str
+    template_id: UUID | None = None
+    exercises: list[ProgramExercisePrescription] = Field(default_factory=list)
+
+
+class ProgramWeekResponse(BaseModel):
+    id: UUID
+    week_number: int
+    status: str
+    prescriptions: list[ProgramDayPrescription]
+    progression_source: str | None
+    recovery_rating: int | None
+    notes: str | None
+    completed_at: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ProgramCreate(BaseModel):
+    name: str
+    description: str | None = None
+    workouts_per_week: int = Field(default=3, ge=1, le=7)
+    template_ids: list[UUID] = Field(default_factory=list)
+
+
+class ProgramUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    status: str | None = Field(default=None, pattern=r"^(active|completed|paused)$")
+
+
+class ProgramResponse(BaseModel):
+    id: UUID
+    name: str
+    description: str | None
+    status: str
+    workouts_per_week: int
+    weeks: list[ProgramWeekResponse] = []
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ProgramSummary(BaseModel):
+    id: UUID
+    name: str
+    status: str
+    workouts_per_week: int
+    week_count: int
+    current_week: int | None
+    created_at: datetime
+
+
+class ProgressionOption(BaseModel):
+    label: str
+    key: str
+    prescriptions: list[ProgramDayPrescription]
+    description: str
+
+
+class ProgressionOptionsResponse(BaseModel):
+    week_number: int
+    options: list[ProgressionOption]
+
+
+class CompleteWeekRequest(BaseModel):
+    recovery_rating: int = Field(ge=1, le=5)
+    notes: str | None = None
+
+
+class AcceptProgressionRequest(BaseModel):
+    option_key: str
+    tweaks: list[ProgramDayPrescription] | None = None
+
+
+class WeeklySummary(BaseModel):
+    week_start: str
+    session_count: int
+    total_volume: float
+    exercises_trained: list[str]
+    avg_rpe: float | None
+    avg_energy: float | None

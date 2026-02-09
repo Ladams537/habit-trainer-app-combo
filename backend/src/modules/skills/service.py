@@ -44,7 +44,9 @@ class SkillsService:
     async def list_skills(self, user_id: UUID) -> list[SkillDefinition]:
         result = await self.db.execute(
             select(SkillDefinition)
-            .where(SkillDefinition.user_id == user_id, SkillDefinition.is_active == True)  # noqa: E712
+            .where(
+                SkillDefinition.user_id == user_id, SkillDefinition.is_active == True
+            )  # noqa: E712
             .order_by(SkillDefinition.created_at.desc())
         )
         return list(result.scalars().all())
@@ -157,9 +159,7 @@ class SkillsService:
 
     # --- Progress / Schedule ---
 
-    async def get_progress(
-        self, user_id: UUID, skill_id: UUID
-    ) -> dict | None:
+    async def get_progress(self, user_id: UUID, skill_id: UUID) -> dict | None:
         skill = await self.get_skill(user_id, skill_id)
         if not skill:
             return None
@@ -171,17 +171,19 @@ class SkillsService:
             if cl.last_review_date:
                 days_elapsed = (now - cl.last_review_date).total_seconds() / 86400
             r = compute_retrievability(cl.stability, days_elapsed)
-            competency_data.append({
-                "id": cl.id,
-                "skill_id": cl.skill_id,
-                "sub_skill": cl.sub_skill,
-                "difficulty": cl.difficulty,
-                "stability": cl.stability,
-                "last_review_date": cl.last_review_date,
-                "next_review_date": cl.next_review_date,
-                "review_count": cl.review_count,
-                "retrievability": round(r, 3),
-            })
+            competency_data.append(
+                {
+                    "id": cl.id,
+                    "skill_id": cl.skill_id,
+                    "sub_skill": cl.sub_skill,
+                    "difficulty": cl.difficulty,
+                    "stability": cl.stability,
+                    "last_review_date": cl.last_review_date,
+                    "next_review_date": cl.next_review_date,
+                    "review_count": cl.review_count,
+                    "retrievability": round(r, 3),
+                }
+            )
 
         # Recent sessions (last 10)
         recent = sorted(
@@ -194,9 +196,7 @@ class SkillsService:
             "recent_sessions": recent,
         }
 
-    async def get_schedule(
-        self, user_id: UUID, skill_id: UUID
-    ) -> dict | None:
+    async def get_schedule(self, user_id: UUID, skill_id: UUID) -> dict | None:
         skill = await self.get_skill(user_id, skill_id)
         if not skill:
             return None
@@ -208,12 +208,14 @@ class SkillsService:
             if cl.last_review_date:
                 days_elapsed = (now - cl.last_review_date).total_seconds() / 86400
             r = compute_retrievability(cl.stability, days_elapsed)
-            schedule.append({
-                "sub_skill": cl.sub_skill,
-                "next_review_date": cl.next_review_date,
-                "retrievability": round(r, 3),
-                "is_due": is_due_for_review(cl.next_review_date),
-            })
+            schedule.append(
+                {
+                    "sub_skill": cl.sub_skill,
+                    "next_review_date": cl.next_review_date,
+                    "retrievability": round(r, 3),
+                    "is_due": is_due_for_review(cl.next_review_date),
+                }
+            )
 
         return {"skill": skill, "schedule": schedule}
 
@@ -229,16 +231,19 @@ class SkillsService:
                 continue
 
             due_count = sum(
-                1 for cl in full_skill.competency_levels
+                1
+                for cl in full_skill.competency_levels
                 if is_due_for_review(cl.next_review_date)
             )
             if due_count > 0:
-                result.append({
-                    "id": full_skill.id,
-                    "name": full_skill.name,
-                    "category": full_skill.category,
-                    "due_count": due_count,
-                    "total_practice_minutes": full_skill.total_practice_minutes,
-                })
+                result.append(
+                    {
+                        "id": full_skill.id,
+                        "name": full_skill.name,
+                        "category": full_skill.category,
+                        "due_count": due_count,
+                        "total_practice_minutes": full_skill.total_practice_minutes,
+                    }
+                )
 
         return result

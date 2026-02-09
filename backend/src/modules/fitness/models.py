@@ -12,6 +12,7 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -60,16 +61,16 @@ class WorkoutTemplate(Base, UUIDMixin, TimestampMixin):
         order_by="TemplateExercise.sort_order",
     )
 
-    __table_args__ = (
-        Index("idx_workout_templates_user", "user_id"),
-    )
+    __table_args__ = (Index("idx_workout_templates_user", "user_id"),)
 
 
 class TemplateExercise(Base, UUIDMixin):
     __tablename__ = "template_exercises"
 
     template_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("workout_templates.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("workout_templates.id", ondelete="CASCADE"),
+        nullable=False,
     )
     exercise_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("exercises.id"), nullable=False
@@ -84,8 +85,63 @@ class TemplateExercise(Base, UUIDMixin):
     template: Mapped[WorkoutTemplate] = relationship(back_populates="exercises")
     exercise: Mapped[Exercise] = relationship()
 
+    __table_args__ = (Index("idx_template_exercises_template", "template_id"),)
+
+
+class WorkoutProgram(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "workout_programs"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(
+        String(20),
+        CheckConstraint("status IN ('active', 'completed', 'paused')"),
+        server_default="'active'",
+    )
+    workouts_per_week: Mapped[int] = mapped_column(Integer, server_default="3")
+
+    weeks: Mapped[list["ProgramWeek"]] = relationship(
+        back_populates="program",
+        cascade="all, delete-orphan",
+        order_by="ProgramWeek.week_number",
+    )
+
+    __table_args__ = (Index("idx_workout_programs_user", "user_id"),)
+
+
+class ProgramWeek(Base, UUIDMixin):
+    __tablename__ = "program_weeks"
+
+    program_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("workout_programs.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    week_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20),
+        CheckConstraint("status IN ('pending', 'active', 'completed')"),
+        server_default="'pending'",
+    )
+    prescriptions: Mapped[list] = mapped_column(JSONB, server_default="[]")
+    progression_source: Mapped[str | None] = mapped_column(String(20))
+    recovery_rating: Mapped[int | None] = mapped_column(
+        SmallInteger, CheckConstraint("recovery_rating BETWEEN 1 AND 5")
+    )
+    notes: Mapped[str | None] = mapped_column(Text)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    program: Mapped[WorkoutProgram] = relationship(back_populates="weeks")
+
     __table_args__ = (
-        Index("idx_template_exercises_template", "template_id"),
+        UniqueConstraint("program_id", "week_number", name="uq_program_week"),
+        Index("idx_program_weeks_program", "program_id"),
     )
 
 
@@ -98,6 +154,13 @@ class WorkoutSession(Base, UUIDMixin):
     template_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("workout_templates.id"), nullable=True
     )
+    program_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("workout_programs.id"), nullable=True
+    )
+    program_week_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("program_weeks.id"), nullable=True
+    )
+    program_day_index: Mapped[int | None] = mapped_column(Integer)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -116,6 +179,7 @@ class WorkoutSession(Base, UUIDMixin):
     )
 
     template: Mapped[WorkoutTemplate | None] = relationship()
+    program: Mapped["WorkoutProgram | None"] = relationship()
     sets: Mapped[list["WorkoutSet"]] = relationship(
         back_populates="session",
         cascade="all, delete-orphan",
@@ -132,7 +196,9 @@ class WorkoutSet(Base, UUIDMixin):
     __tablename__ = "workout_sets"
 
     session_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("workout_sessions.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("workout_sessions.id", ondelete="CASCADE"),
+        nullable=False,
     )
     exercise_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("exercises.id"), nullable=False

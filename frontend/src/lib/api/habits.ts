@@ -11,6 +11,7 @@ export interface Habit {
 	color: string;
 	sort_order: number;
 	is_active: boolean;
+	partial_completion_counts: boolean;
 	created_at: string;
 	current_streak: number;
 	strength: number;
@@ -24,6 +25,7 @@ export interface HabitToday {
 	unit: string | null;
 	color: string;
 	sort_order: number;
+	partial_completion_counts: boolean;
 	completed_today: boolean;
 	today_value: number;
 	current_streak: number;
@@ -63,6 +65,7 @@ export function createHabit(
 		target_value?: number;
 		unit?: string;
 		color?: string;
+		partial_completion_counts?: boolean;
 	}
 ) {
 	return apiFetch<Habit>('/api/habits/', {

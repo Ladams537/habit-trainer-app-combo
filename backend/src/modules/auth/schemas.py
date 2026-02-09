@@ -18,6 +18,22 @@ class UserResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class UserUpdate(BaseModel):
+    display_name: str | None = None
+    email: EmailStr | None = None
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class PreferencesUpdate(BaseModel):
+    weight_unit: str | None = None
+    distance_unit: str | None = None
+    theme: str | None = None
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str

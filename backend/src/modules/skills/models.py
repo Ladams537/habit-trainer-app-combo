@@ -27,7 +27,9 @@ class SkillDefinition(Base, UUIDMixin, TimestampMixin):
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    category: Mapped[str] = mapped_column(String(50), nullable=False, server_default="'general'")
+    category: Mapped[str] = mapped_column(
+        String(50), nullable=False, server_default="'general'"
+    )
     sub_skills: Mapped[list] = mapped_column(JSONB, server_default="[]")
     current_level: Mapped[str] = mapped_column(String(20), server_default="'beginner'")
     total_practice_minutes: Mapped[int] = mapped_column(Integer, server_default="0")
@@ -70,9 +72,7 @@ class PracticeSession(Base, UUIDMixin):
 
     skill: Mapped[SkillDefinition] = relationship(back_populates="practice_sessions")
 
-    __table_args__ = (
-        Index("idx_practice_sessions_skill", "skill_id"),
-    )
+    __table_args__ = (Index("idx_practice_sessions_skill", "skill_id"),)
 
 
 class CompetencyLevel(Base, UUIDMixin):

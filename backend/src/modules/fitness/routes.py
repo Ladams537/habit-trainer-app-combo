@@ -5,15 +5,25 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from src.api.dependencies import DB, CurrentUser
 from src.modules.fitness.schemas import (
+    AcceptProgressionRequest,
     AddExerciseRequest,
     CompleteSessionRequest,
+    CompleteWeekRequest,
     ExerciseCreate,
     ExerciseProgressionPoint,
     ExerciseResponse,
     ExerciseSetsGroup,
     ExerciseStatsResponse,
     OverviewStatsResponse,
+    ProgramCreate,
+    ProgramDayPrescription,
+    ProgramResponse,
+    ProgramSummary,
+    ProgramUpdate,
+    ProgramWeekResponse,
+    ProgressionOptionsResponse,
     StartSessionRequest,
+    WeeklySummary,
     WorkoutSessionResponse,
     WorkoutSessionSummary,
     WorkoutSetCreate,
@@ -22,7 +32,7 @@ from src.modules.fitness.schemas import (
     WorkoutTemplateResponse,
     WorkoutTemplateUpdate,
 )
-from src.modules.fitness.service import FitnessService
+from src.modules.fitness.service import FitnessService, ProgramService
 
 router = APIRouter(prefix="/api/fitness", tags=["fitness"])
 
@@ -82,6 +92,7 @@ def _session_to_summary(session) -> WorkoutSessionSummary:
 
 # --- Exercises ---
 
+
 @router.get("/exercises", response_model=list[ExerciseResponse])
 async def list_exercises(
     user: CurrentUser,
@@ -90,10 +101,14 @@ async def list_exercises(
     muscle_group: str | None = Query(None),
 ):
     service = FitnessService(db)
-    return await service.list_exercises(user.id, category=category, muscle_group=muscle_group)
+    return await service.list_exercises(
+        user.id, category=category, muscle_group=muscle_group
+    )
 
 
-@router.post("/exercises", response_model=ExerciseResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/exercises", response_model=ExerciseResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_exercise(data: ExerciseCreate, user: CurrentUser, db: DB):
     service = FitnessService(db)
     return await service.create_exercise(user.id, data)
@@ -101,13 +116,18 @@ async def create_exercise(data: ExerciseCreate, user: CurrentUser, db: DB):
 
 # --- Templates ---
 
+
 @router.get("/templates", response_model=list[WorkoutTemplateResponse])
 async def list_templates(user: CurrentUser, db: DB):
     service = FitnessService(db)
     return await service.list_templates(user.id)
 
 
-@router.post("/templates", response_model=WorkoutTemplateResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/templates",
+    response_model=WorkoutTemplateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_template(data: WorkoutTemplateCreate, user: CurrentUser, db: DB):
     service = FitnessService(db)
     return await service.create_template(user.id, data)
@@ -123,7 +143,9 @@ async def get_template(template_id: UUID, user: CurrentUser, db: DB):
 
 
 @router.put("/templates/{template_id}", response_model=WorkoutTemplateResponse)
-async def update_template(template_id: UUID, data: WorkoutTemplateUpdate, user: CurrentUser, db: DB):
+async def update_template(
+    template_id: UUID, data: WorkoutTemplateUpdate, user: CurrentUser, db: DB
+):
     service = FitnessService(db)
     template = await service.update_template(user.id, template_id, data)
     if not template:
@@ -139,6 +161,7 @@ async def delete_template(template_id: UUID, user: CurrentUser, db: DB):
 
 
 # --- Sessions ---
+
 
 @router.post("/sessions/start", response_model=WorkoutSessionResponse)
 async def start_session(data: StartSessionRequest, user: CurrentUser, db: DB):
@@ -179,7 +202,11 @@ async def get_session(session_id: UUID, user: CurrentUser, db: DB):
     return _session_to_response(session)
 
 
-@router.post("/sessions/{session_id}/sets", response_model=WorkoutSetResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/sessions/{session_id}/sets",
+    response_model=WorkoutSetResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def log_set(session_id: UUID, data: WorkoutSetCreate, user: CurrentUser, db: DB):
     service = FitnessService(db)
     try:
@@ -188,7 +215,9 @@ async def log_set(session_id: UUID, data: WorkoutSetCreate, user: CurrentUser, d
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.delete("/sessions/{session_id}/sets/{set_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/sessions/{session_id}/sets/{set_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_set(session_id: UUID, set_id: UUID, user: CurrentUser, db: DB):
     service = FitnessService(db)
     if not await service.delete_set(user.id, session_id, set_id):
@@ -196,7 +225,9 @@ async def delete_set(session_id: UUID, set_id: UUID, user: CurrentUser, db: DB):
 
 
 @router.post("/sessions/{session_id}/exercises", status_code=status.HTTP_204_NO_CONTENT)
-async def add_exercise_to_session(session_id: UUID, data: AddExerciseRequest, user: CurrentUser, db: DB):
+async def add_exercise_to_session(
+    session_id: UUID, data: AddExerciseRequest, user: CurrentUser, db: DB
+):
     """Add an exercise to a free-form session (no-op, just validates session exists)."""
     service = FitnessService(db)
     session = await service.get_session(user.id, session_id)
@@ -208,15 +239,21 @@ async def add_exercise_to_session(session_id: UUID, data: AddExerciseRequest, us
 
 @router.post("/sessions/{session_id}/complete", response_model=WorkoutSessionResponse)
 async def complete_session(
-    session_id: UUID, user: CurrentUser, db: DB, data: CompleteSessionRequest | None = None
+    session_id: UUID,
+    user: CurrentUser,
+    db: DB,
+    data: CompleteSessionRequest | None = None,
 ):
     service = FitnessService(db)
     notes = data.notes if data else None
     rating_energy = data.rating_energy if data else None
     rating_mood = data.rating_mood if data else None
     session = await service.complete_session(
-        user.id, session_id, notes=notes,
-        rating_energy=rating_energy, rating_mood=rating_mood,
+        user.id,
+        session_id,
+        notes=notes,
+        rating_energy=rating_energy,
+        rating_mood=rating_mood,
     )
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -224,6 +261,7 @@ async def complete_session(
 
 
 # --- Stats ---
+
 
 @router.get("/exercises/{exercise_id}/history")
 async def exercise_history(
@@ -236,7 +274,9 @@ async def exercise_history(
     return await service.get_exercise_history(user.id, exercise_id, limit=limit)
 
 
-@router.get("/exercises/{exercise_id}/progression", response_model=ExerciseStatsResponse)
+@router.get(
+    "/exercises/{exercise_id}/progression", response_model=ExerciseStatsResponse
+)
 async def exercise_progression(
     exercise_id: UUID,
     user: CurrentUser,
@@ -278,4 +318,161 @@ async def overview_stats(
     to_date: date | None = Query(None),
 ):
     service = FitnessService(db)
-    return await service.get_overview_stats(user.id, from_date=from_date, to_date=to_date)
+    return await service.get_overview_stats(
+        user.id, from_date=from_date, to_date=to_date
+    )
+
+
+@router.get("/stats/weekly-summaries", response_model=list[WeeklySummary])
+async def weekly_summaries(
+    user: CurrentUser,
+    db: DB,
+    weeks: int = Query(12, ge=1, le=52),
+):
+    service = FitnessService(db)
+    return await service.get_weekly_summaries(user.id, weeks=weeks)
+
+
+# --- Programs ---
+
+
+@router.post(
+    "/programs", response_model=ProgramResponse, status_code=status.HTTP_201_CREATED
+)
+async def create_program(data: ProgramCreate, user: CurrentUser, db: DB):
+    service = ProgramService(db)
+    return await service.create_program(user.id, data)
+
+
+@router.get("/programs", response_model=list[ProgramSummary])
+async def list_programs(
+    user: CurrentUser,
+    db: DB,
+    program_status: str | None = Query(None, alias="status"),
+):
+    service = ProgramService(db)
+    return await service.list_programs(user.id, status=program_status)
+
+
+@router.get("/programs/{program_id}", response_model=ProgramResponse)
+async def get_program(program_id: UUID, user: CurrentUser, db: DB):
+    service = ProgramService(db)
+    program = await service.get_program(user.id, program_id)
+    if not program:
+        raise HTTPException(status_code=404, detail="Program not found")
+    return program
+
+
+@router.put("/programs/{program_id}", response_model=ProgramResponse)
+async def update_program(
+    program_id: UUID, data: ProgramUpdate, user: CurrentUser, db: DB
+):
+    service = ProgramService(db)
+    program = await service.update_program(user.id, program_id, data)
+    if not program:
+        raise HTTPException(status_code=404, detail="Program not found")
+    return program
+
+
+@router.delete("/programs/{program_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_program(program_id: UUID, user: CurrentUser, db: DB):
+    service = ProgramService(db)
+    if not await service.delete_program(user.id, program_id):
+        raise HTTPException(status_code=404, detail="Program not found")
+
+
+@router.put(
+    "/programs/{program_id}/weeks/{week_num}",
+    response_model=ProgramWeekResponse,
+)
+async def update_week(
+    program_id: UUID,
+    week_num: int,
+    prescriptions: list[ProgramDayPrescription],
+    user: CurrentUser,
+    db: DB,
+):
+    service = ProgramService(db)
+    week = await service.update_week_prescriptions(
+        user.id, program_id, week_num, [p.model_dump(mode="json") for p in prescriptions]
+    )
+    if not week:
+        raise HTTPException(status_code=404, detail="Week not found")
+    return week
+
+
+@router.post(
+    "/programs/{program_id}/weeks/{week_num}/complete",
+    response_model=ProgramWeekResponse,
+)
+async def complete_week(
+    program_id: UUID,
+    week_num: int,
+    data: CompleteWeekRequest,
+    user: CurrentUser,
+    db: DB,
+):
+    service = ProgramService(db)
+    week = await service.complete_week(
+        user.id, program_id, week_num, data.recovery_rating, data.notes
+    )
+    if not week:
+        raise HTTPException(status_code=404, detail="Week not found")
+    return week
+
+
+@router.get(
+    "/programs/{program_id}/weeks/{week_num}/progression",
+    response_model=ProgressionOptionsResponse,
+)
+async def get_progression_options(
+    program_id: UUID, week_num: int, user: CurrentUser, db: DB
+):
+    service = ProgramService(db)
+    options = await service.generate_progression_options(
+        user.id, program_id, week_num
+    )
+    return ProgressionOptionsResponse(week_number=week_num + 1, options=options)
+
+
+@router.post(
+    "/programs/{program_id}/weeks/{week_num}/progression",
+    response_model=ProgramWeekResponse,
+)
+async def accept_progression(
+    program_id: UUID,
+    week_num: int,
+    data: AcceptProgressionRequest,
+    user: CurrentUser,
+    db: DB,
+):
+    service = ProgramService(db)
+    week = await service.accept_progression(
+        user.id, program_id, week_num, data.option_key, data.tweaks
+    )
+    if not week:
+        raise HTTPException(status_code=400, detail="Invalid progression option")
+    return week
+
+
+@router.post(
+    "/programs/{program_id}/weeks/{week_num}/start-session",
+    response_model=WorkoutSessionResponse,
+)
+async def start_program_session(
+    program_id: UUID,
+    week_num: int,
+    user: CurrentUser,
+    db: DB,
+    day_index: int = Query(0, ge=0),
+):
+    service = ProgramService(db)
+    session = await service.start_program_session(
+        user.id, program_id, week_num, day_index
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Program day not found")
+    # Reload with relationships
+    fitness_svc = FitnessService(db)
+    loaded = await fitness_svc.get_session(user.id, session.id)
+    return _session_to_response(loaded)

@@ -2,14 +2,16 @@
 	import { page } from '$app/state';
 	import Brain from '@lucide/svelte/icons/brain';
 	import CalendarDays from '@lucide/svelte/icons/calendar-days';
-	import ChartLine from '@lucide/svelte/icons/chart-line';
+	import Dumbbell from '@lucide/svelte/icons/dumbbell';
 	import ListChecks from '@lucide/svelte/icons/list-checks';
+	import Settings from '@lucide/svelte/icons/settings';
 
 	const navItems = [
 		{ href: '/today', label: 'Today', icon: ListChecks },
-		{ href: '/plan', label: 'Plan', icon: CalendarDays },
+		{ href: '/programs', label: 'Programs', icon: Dumbbell },
 		{ href: '/skills', label: 'Skills', icon: Brain },
-		{ href: '/analytics', label: 'Analytics', icon: ChartLine }
+		{ href: '/calendar', label: 'Calendar', icon: CalendarDays },
+		{ href: '/settings', label: 'Settings', icon: Settings }
 	];
 
 	function isActive(href: string): boolean {

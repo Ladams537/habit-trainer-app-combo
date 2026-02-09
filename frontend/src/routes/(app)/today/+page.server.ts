@@ -1,22 +1,25 @@
 import { getActiveSession, getTemplates, startSession } from '$lib/api/fitness';
 import { getTodayHabits, logCompletion, removeCompletion } from '$lib/api/habits';
+import { getPrograms } from '$lib/api/programs';
 import { getSkillsDueToday } from '$lib/api/skills';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	if (!locals.token) return { habits: [], activeSession: null, templates: [], skillsDue: [] };
+	if (!locals.token) return { habits: [], activeSession: null, templates: [], skillsDue: [], activeProgram: null };
 
 	try {
-		const [habits, activeSession, templates, skillsDue] = await Promise.all([
+		const [habits, activeSession, templates, skillsDue, programs] = await Promise.all([
 			getTodayHabits(locals.token),
 			getActiveSession(locals.token).catch(() => null),
 			getTemplates(locals.token).catch(() => []),
-			getSkillsDueToday(locals.token).catch(() => [])
+			getSkillsDueToday(locals.token).catch(() => []),
+			getPrograms(locals.token, 'active').catch(() => [])
 		]);
-		return { habits, activeSession, templates, skillsDue };
+		const activeProgram = programs.length > 0 ? programs[0] : null;
+		return { habits, activeSession, templates, skillsDue, activeProgram };
 	} catch {
-		return { habits: [], activeSession: null, templates: [], skillsDue: [] };
+		return { habits: [], activeSession: null, templates: [], skillsDue: [], activeProgram: null };
 	}
 };
 

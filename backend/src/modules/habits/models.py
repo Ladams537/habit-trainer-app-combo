@@ -44,9 +44,7 @@ class ActivityLog(Base, UUIDMixin):
     )
     notes: Mapped[str | None] = mapped_column(Text)
 
-    __table_args__ = (
-        Index("idx_activity_user_day", "user_id", started_at.desc()),
-    )
+    __table_args__ = (Index("idx_activity_user_day", "user_id", started_at.desc()),)
 
 
 class HabitDefinition(Base, UUIDMixin):
@@ -61,12 +59,17 @@ class HabitDefinition(Base, UUIDMixin):
         CheckConstraint("habit_type IN ('boolean', 'numeric', 'duration')"),
         nullable=False,
     )
-    frequency: Mapped[str] = mapped_column(String(20), nullable=False, server_default="daily")
+    frequency: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="daily"
+    )
     frequency_config: Mapped[dict] = mapped_column(JSONB, server_default="{}")
     target_value: Mapped[float] = mapped_column(Numeric, server_default="1")
     unit: Mapped[str | None] = mapped_column(String(50))
     color: Mapped[str] = mapped_column(String(20), server_default="'#4CAF50'")
     sort_order: Mapped[int] = mapped_column(Integer, server_default="0")
+    partial_completion_counts: Mapped[bool] = mapped_column(
+        Boolean, server_default="true"
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, server_default="true")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 # --- Skill schemas ---
 
+
 class SkillCreate(BaseModel):
     name: str
     category: str = "general"
@@ -37,6 +38,7 @@ class SkillResponse(BaseModel):
 
 # --- Practice session schemas ---
 
+
 class PracticeSessionCreate(BaseModel):
     duration_minutes: int = Field(ge=1)
     quality_rating: int = Field(ge=1, le=5)
@@ -58,6 +60,7 @@ class PracticeSessionResponse(BaseModel):
 
 # --- Competency level schemas ---
 
+
 class CompetencyLevelResponse(BaseModel):
     id: UUID
     skill_id: UUID
@@ -73,6 +76,7 @@ class CompetencyLevelResponse(BaseModel):
 
 
 # --- Progress / Schedule / Today schemas ---
+
 
 class SkillProgressResponse(BaseModel):
     skill: SkillResponse

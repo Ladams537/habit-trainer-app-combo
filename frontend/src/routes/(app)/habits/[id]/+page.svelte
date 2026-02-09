@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
-	import StreakDisplay from '$lib/components/habits/StreakDisplay.svelte';
+	import { Label } from '$lib/components/ui/label';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Flame from '@lucide/svelte/icons/flame';
 	import Trophy from '@lucide/svelte/icons/trophy';
@@ -12,6 +12,7 @@
 	let { data } = $props();
 
 	const strengthPercent = $derived(Math.round(data.streak.strength * 100));
+	let partialCompletionCounts = $state(data.habit.partial_completion_counts);
 </script>
 
 <div class="space-y-6">
@@ -54,6 +55,42 @@
 			</Card.Content>
 		</Card.Root>
 	</div>
+
+	<!-- Partial completion toggle (only for numeric/duration) -->
+	{#if data.habit.habit_type !== 'boolean'}
+		<Card.Root>
+			<Card.Content class="py-4">
+				<form method="POST" action="?/updatePartial" use:enhance={() => {
+					return async ({ update }) => {
+						await update();
+					};
+				}}>
+					<div class="flex items-center justify-between">
+						<div class="space-y-0.5">
+							<Label>Partial progress counts toward streak</Label>
+							<p class="text-xs text-muted-foreground">When off, you must reach your target to count the day</p>
+						</div>
+						<input type="hidden" name="partial_completion_counts" value={partialCompletionCounts ? 'true' : 'false'} />
+						<button
+							type="submit"
+							onclick={() => {
+								partialCompletionCounts = !partialCompletionCounts;
+								const input = document.querySelector('input[name="partial_completion_counts"]') as HTMLInputElement;
+								if (input) input.value = partialCompletionCounts ? 'true' : 'false';
+							}}
+							role="switch"
+							aria-checked={partialCompletionCounts}
+							class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 {partialCompletionCounts ? 'bg-primary' : 'bg-muted'}"
+						>
+							<span
+								class="pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform {partialCompletionCounts ? 'translate-x-4' : 'translate-x-0'}"
+							></span>
+						</button>
+					</div>
+				</form>
+			</Card.Content>
+		</Card.Root>
+	{/if}
 
 	<!-- Completion history -->
 	<Card.Root>

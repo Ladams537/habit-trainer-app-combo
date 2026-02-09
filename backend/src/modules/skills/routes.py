@@ -22,6 +22,7 @@ router = APIRouter(prefix="/api/skills", tags=["skills"])
 
 # --- Skills CRUD ---
 
+
 @router.get("/", response_model=list[SkillResponse])
 async def list_skills(user: CurrentUser, db: DB):
     service = SkillsService(db)
@@ -68,12 +69,15 @@ async def delete_skill(skill_id: UUID, user: CurrentUser, db: DB):
 
 # --- Practice ---
 
+
 @router.post(
     "/{skill_id}/practice",
     response_model=PracticeSessionResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def log_practice(skill_id: UUID, data: PracticeSessionCreate, user: CurrentUser, db: DB):
+async def log_practice(
+    skill_id: UUID, data: PracticeSessionCreate, user: CurrentUser, db: DB
+):
     service = SkillsService(db)
     try:
         return await service.log_practice(user.id, skill_id, data)
@@ -83,6 +87,7 @@ async def log_practice(skill_id: UUID, data: PracticeSessionCreate, user: Curren
 
 # --- Progress / Schedule ---
 
+
 @router.get("/{skill_id}/progress", response_model=SkillProgressResponse)
 async def get_progress(skill_id: UUID, user: CurrentUser, db: DB):
     service = SkillsService(db)
@@ -91,7 +96,9 @@ async def get_progress(skill_id: UUID, user: CurrentUser, db: DB):
         raise HTTPException(status_code=404, detail="Skill not found")
     return SkillProgressResponse(
         skill=SkillResponse.model_validate(result["skill"]),
-        competency_levels=[CompetencyLevelResponse(**cl) for cl in result["competency_levels"]],
+        competency_levels=[
+            CompetencyLevelResponse(**cl) for cl in result["competency_levels"]
+        ],
         recent_sessions=[
             PracticeSessionResponse.model_validate(s) for s in result["recent_sessions"]
         ],
